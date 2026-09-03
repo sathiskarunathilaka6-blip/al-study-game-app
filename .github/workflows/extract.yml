@@ -1,0 +1,37 @@
+name: Extract AL Study Game
+
+on:
+  push:
+    paths:
+      - "AL_Study_Game_Mobile_V8.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract V8 project
+        run: |
+          rm -rf capacitor.config.ts package.json README.md www
+          mkdir -p /tmp/algame
+          unzip -o AL_Study_Game_Mobile_V8.zip -d /tmp/algame
+          cp /tmp/algame/AL_Study_Game_Mobile/capacitor.config.ts .
+          cp /tmp/algame/AL_Study_Game_Mobile/package.json .
+          cp /tmp/algame/AL_Study_Game_Mobile/README.md .
+          cp -R /tmp/algame/AL_Study_Game_Mobile/www .
+          rm -f AL_Study_Game_Mobile_V8.zip
+
+      - name: Save extracted project
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Extract AL Study Game mobile project" || exit 0
+          git push
