@@ -38,12 +38,15 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
+      - name: Install CocoaPods
+        run: |
+          cd ios/App
+          pod install
+
       - name: Build iOS device app
         run: |
-          set -o pipefail
-
           xcodebuild \
-            -project ios/App/App.xcodeproj \
+            -workspace ios/App/App.xcworkspace \
             -scheme App \
             -sdk iphoneos \
             -configuration Debug \
@@ -51,31 +54,20 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             SWIFT_VERSION=5.0 \
-            build 2>&1 | tee ios-build.log
-
-          BUILD_EXIT=${PIPESTATUS[0]}
-
-          echo ""
-          echo "======================================"
-          echo "iOS BUILD ERROR DETAILS"
-          echo "======================================"
-
-          grep -i -E "error:|fatal error:" ios-build.log || true
-
-          echo "======================================"
-
-          exit $BUILD_EXIT
+            build
 
       - name: Create unsigned IPA
-        if: success()
         run: |
           mkdir -p ipa/Payload
-          cp -R build/ios/Build/Products/Debug-iphoneos/App.app ipa/Payload/App.app
+
+          cp -R \
+            build/ios/Build/Products/Debug-iphoneos/App.app \
+            ipa/Payload/App.app
+
           cd ipa
           zip -r ../AL-Study-Game-unsigned.ipa Payload
 
       - name: Upload IPA
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AL-Study-Game-unsigned-IPA
