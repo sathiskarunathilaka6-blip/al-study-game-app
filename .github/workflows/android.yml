@@ -22,11 +22,26 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      - name: Create Capacitor JSON config
+        run: |
+          rm -f capacitor.config.ts
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.alstudy.game",
+            "appName": "AL Study Game",
+            "webDir": "www",
+            "bundledWebRuntime": false,
+            "android": {
+              "backgroundColor": "#080b12"
+            },
+            "ios": {
+              "contentInset": "automatic"
+            }
+          }
+          EOF
+
       - name: Install dependencies
         run: npm install --no-package-lock
-
-      - name: Install TypeScript
-        run: npm install -D typescript --no-package-lock
 
       - name: Add Android platform
         run: npx cap add android
