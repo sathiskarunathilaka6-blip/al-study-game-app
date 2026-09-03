@@ -1,0 +1,77 @@
+name: Build iOS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Create Capacitor JSON config
+        run: |
+          rm -f capacitor.config.ts
+
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.alstudy.game",
+            "appName": "AL Study Game",
+            "webDir": "www",
+            "bundledWebRuntime": false,
+            "android": {
+              "backgroundColor": "#080b12"
+            },
+            "ios": {
+              "contentInset": "automatic"
+            }
+          }
+          EOF
+
+      - name: Install dependencies
+        run: npm install --no-package-lock
+
+      - name: Add iOS platform
+        run: npx cap add ios
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build iOS app
+        run: |
+          if [ -d "ios/App/App.xcworkspace" ]; then
+            xcodebuild \
+              -workspace ios/App/App.xcworkspace \
+              -scheme App \
+              -sdk iphonesimulator \
+              -configuration Debug \
+              -derivedDataPath build/ios \
+              CODE_SIGNING_ALLOWED=NO \
+              build
+          else
+            xcodebuild \
+              -project ios/App/App.xcodeproj \
+              -scheme App \
+              -sdk iphonesimulator \
+              -configuration Debug \
+              -derivedDataPath build/ios \
+              CODE_SIGNING_ALLOWED=NO \
+              build
+          fi
+
+      - name: Upload iOS app
+        uses: actions/upload-artifact@v4
+        with:
+          name: AL-Study-Game-iOS-App
+          path: build/ios/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error
