@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Create Capacitor JSON config
+      - name: Create Capacitor config
         run: |
           rm -f capacitor.config.ts
 
@@ -40,6 +40,8 @@ jobs:
 
       - name: Build iOS device app
         run: |
+          set -o pipefail
+
           xcodebuild \
             -project ios/App/App.xcodeproj \
             -scheme App \
@@ -48,9 +50,24 @@ jobs:
             -derivedDataPath build/ios \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            build
+            SWIFT_VERSION=5.0 \
+            build 2>&1 | tee ios-build.log
+
+          BUILD_EXIT=${PIPESTATUS[0]}
+
+          echo ""
+          echo "======================================"
+          echo "iOS BUILD ERROR DETAILS"
+          echo "======================================"
+
+          grep -i -E "error:|fatal error:" ios-build.log || true
+
+          echo "======================================"
+
+          exit $BUILD_EXIT
 
       - name: Create unsigned IPA
+        if: success()
         run: |
           mkdir -p ipa/Payload
           cp -R build/ios/Build/Products/Debug-iphoneos/App.app ipa/Payload/App.app
@@ -58,6 +75,7 @@ jobs:
           zip -r ../AL-Study-Game-unsigned.ipa Payload
 
       - name: Upload IPA
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: AL-Study-Game-unsigned-IPA
