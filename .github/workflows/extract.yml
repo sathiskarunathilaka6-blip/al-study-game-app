@@ -1,10 +1,10 @@
 name: Extract AL Study Game
 
 on:
+  workflow_dispatch:
   push:
     paths:
-      - "AL_Study_Game_Mobile_V8.zip"
-  workflow_dispatch:
+      - "*.zip"
 
 permissions:
   contents: write
@@ -17,21 +17,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Extract V8 project
+      - name: Extract AL Study Game
         run: |
+          ZIP_FILE=$(find . -maxdepth 1 -type f -name "*.zip" | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "No ZIP file found."
+            exit 1
+          fi
+
+          echo "Using ZIP: $ZIP_FILE"
+
           rm -rf capacitor.config.ts package.json README.md www
+          rm -rf /tmp/algame
           mkdir -p /tmp/algame
-          unzip -o AL_Study_Game_Mobile_V8.zip -d /tmp/algame
-          cp /tmp/algame/AL_Study_Game_Mobile/capacitor.config.ts .
-          cp /tmp/algame/AL_Study_Game_Mobile/package.json .
-          cp /tmp/algame/AL_Study_Game_Mobile/README.md .
-          cp -R /tmp/algame/AL_Study_Game_Mobile/www .
-          rm -f AL_Study_Game_Mobile_V8.zip
+
+          unzip -o "$ZIP_FILE" -d /tmp/algame
+
+          PROJECT_DIR=$(find /tmp/algame -type f -name "capacitor.config.ts" -exec dirname {} \; | head -n 1)
+
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Project files not found inside ZIP."
+            exit 1
+          fi
+
+          cp "$PROJECT_DIR/capacitor.config.ts" .
+          cp "$PROJECT_DIR/package.json" .
+          cp "$PROJECT_DIR/README.md" .
+          cp -R "$PROJECT_DIR/www" .
+
+          rm -f "$ZIP_FILE"
 
       - name: Save extracted project
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add -A
           git commit -m "Extract AL Study Game mobile project" || exit 0
           git push
