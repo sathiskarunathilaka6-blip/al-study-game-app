@@ -23,7 +23,10 @@ jobs:
           java-version: 21
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-package-lock
+
+      - name: Install TypeScript
+        run: npm install -D typescript --no-package-lock
 
       - name: Add Android platform
         run: npx cap add android
