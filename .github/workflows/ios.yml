@@ -1,4 +1,4 @@
-name: Build iOS
+name: Build iOS IPA
 
 on:
   workflow_dispatch:
@@ -25,13 +25,7 @@ jobs:
             "appId": "com.alstudy.game",
             "appName": "AL Study Game",
             "webDir": "www",
-            "bundledWebRuntime": false,
-            "android": {
-              "backgroundColor": "#080b12"
-            },
-            "ios": {
-              "contentInset": "automatic"
-            }
+            "bundledWebRuntime": false
           }
           EOF
 
@@ -44,34 +38,28 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync ios
 
-      - name: Show Xcode version
-        run: xcodebuild -version
-
-      - name: Build iOS app
+      - name: Build iOS device app
         run: |
-          if [ -d "ios/App/App.xcworkspace" ]; then
-            xcodebuild \
-              -workspace ios/App/App.xcworkspace \
-              -scheme App \
-              -sdk iphonesimulator \
-              -configuration Debug \
-              -derivedDataPath build/ios \
-              CODE_SIGNING_ALLOWED=NO \
-              build
-          else
-            xcodebuild \
-              -project ios/App/App.xcodeproj \
-              -scheme App \
-              -sdk iphonesimulator \
-              -configuration Debug \
-              -derivedDataPath build/ios \
-              CODE_SIGNING_ALLOWED=NO \
-              build
-          fi
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Debug \
+            -derivedDataPath build/ios \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
 
-      - name: Upload iOS app
+      - name: Create unsigned IPA
+        run: |
+          mkdir -p ipa/Payload
+          cp -R build/ios/Build/Products/Debug-iphoneos/App.app ipa/Payload/App.app
+          cd ipa
+          zip -r ../AL-Study-Game-unsigned.ipa Payload
+
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: AL-Study-Game-iOS-App
-          path: build/ios/Build/Products/Debug-iphonesimulator/App.app
+          name: AL-Study-Game-unsigned-IPA
+          path: AL-Study-Game-unsigned.ipa
           if-no-files-found: error
